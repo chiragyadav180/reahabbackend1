@@ -12,6 +12,7 @@ const Progress = require('./models/progressModel');
 const ProgressHistory = require('./models/progressHistory');
 const User = require('./models/userModel');
 
+const PORT = process.env.PORT || 4000;
 
 // express app
 const app = express()
@@ -79,8 +80,8 @@ app.use('/api/user',userRoutes)
 // connect to db
 mongoose.connect(process.env.MONGO_URI)
     .then(()=>{
-        app.listen(process.env.PORT,()=>{
-            console.log('connected to the db And listening on port',process.env.PORT)
+        app.listen(PORT,()=>{
+            console.log(`connected to the db And listening on port ${PORT}`)
         })
     })
     .catch((error)=>{
