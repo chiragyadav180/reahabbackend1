@@ -1,10 +1,10 @@
-require('dotenv').config()
+require('dotenv').config();
 
 const cors = require('cors');
 const cron = require('node-cron');
-const express = require('express')
-const mongoose = require('mongoose')
-const programRoutes=require('./routes/programs')
+const express = require('express');
+const mongoose = require('mongoose');
+const programRoutes = require('./routes/programs');
 const progressRoutes = require('./routes/progress');
 const exerciseRoutes = require('./routes/userexercise');
 const userRoutes = require('./routes/user');
@@ -14,25 +14,21 @@ const User = require('./models/userModel');
 
 const PORT = process.env.PORT || 4000;
 
-// express app
-const app = express()
+// Express app
+const app = express();
 
 app.use(express.json());
-app.use(cors()); 
+app.use(cors());
 
-
-
-cron.schedule('0 0 * * * *', async () => {
+// Cron job to reset progress every 24 hours (00:00 every day)
+cron.schedule('0 0 * * *', async () => {
   try {
-    // Fetch all users
     const allUsers = await User.find({});
-    
+
     for (let user of allUsers) {
-      // Fetch progress for each user
       const allProgress = await Progress.find({ userId: user._id });
 
       for (let progress of allProgress) {
-        // Save current progress to history
         await ProgressHistory.create({
           programId: progress.programId,
           exercisesCompleted: progress.exercisesCompleted.map(e => ({
@@ -40,10 +36,10 @@ cron.schedule('0 0 * * * *', async () => {
             completedAt: e.completedAt
           })),
           date: new Date(),
-          userId: user._id // Include user ID in progress history
+          userId: user._id,
         });
 
-        // Reset the current progress
+        // Reset progress
         progress.exercisesCompleted = [];
         await progress.save();
       }
@@ -54,36 +50,24 @@ cron.schedule('0 0 * * * *', async () => {
   }
 });
 
-
 app.use((req, res, next) => {
-  console.log(req.path, req.method)
-  next()
-})
+  console.log(req.path, req.method);
+  next();
+});
 
-
-// routes
-
-app.use('/api/programs',programRoutes)
-// app.use('/api/programs',programRoutes)
-
-
+// Routes
+app.use('/api/programs', programRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/userexercise', exerciseRoutes);
+app.use('/api/user', userRoutes);
 
-app.use('/api/userexercise',exerciseRoutes)
-
-
-app.use('/api/user',userRoutes)
-
-
-
-
-// connect to db
+// Connect to the database and start the server
 mongoose.connect(process.env.MONGO_URI)
-    .then(()=>{
-        app.listen(PORT,()=>{
-            console.log(`connected to the db And listening on port ${PORT}`)
-        })
-    })
-    .catch((error)=>{
-        console.log(error)
-    })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Connected to the DB and listening on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+  });
